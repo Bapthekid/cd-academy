@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Home - C&D Academy{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-md-8 mx-auto">
+                <!-- Welcome Message -->
+                <div class="text-center mb-5">
+                    <h1 class="display-4 fw-bold text-primary mb-3">Welcome to C&D Academy</h1>
+                    <p class="lead text-muted">Learn. Grow. Succeed.</p>
+                </div>
+
+                <!-- Flyer Display -->
+                <div class="flyer-container mb-5">
+                    <div class="card shadow-lg border-0">
+                        <div class="card-body p-0">
+                            <img src="{{ url_for('static', filename='images/flyer.jpg') }}" 
+                                 alt="C&D Academy Flyer" 
+                                 class="img-fluid w-100 rounded-top"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22600%22 height=%22400%22%3E%3Crect fill=%22%23e9ecef%22 width=%22600%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2224%22 fill=%22%23666%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EFlyer Image (static/images/flyer.jpg)%3C/text%3E%3C/svg%3E'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Register Button -->
+                <div class="text-center mb-5">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-5">
+                        Register Now
+                    </a>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="row mt-5">
+                    <div class="col-md-4 text-center">
+                        <div class="contact-card">
+                            <i class="bi bi-telephone" style="font-size: 2rem; color: #0d6efd;"></i>
+                            <h5 class="mt-3">Phone</h5>
+                            <p>(551) 221-2922</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="contact-card">
+                            <i class="bi bi-envelope" style="font-size: 2rem; color: #0d6efd;"></i>
+                            <h5 class="mt-3">Email</h5>
+                            <p>clardo2922@gmail.com</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="contact-card">
+                            <i class="bi bi-geo-alt" style="font-size: 2rem; color: #0d6efd;"></i>
+                            <h5 class="mt-3">Location</h5>
+                            <p>509 Bramhall Ave, Jersey City, NJ 07304</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

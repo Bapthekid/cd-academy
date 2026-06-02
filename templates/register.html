@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Registration - C&D Academy{% endblock %}
+
+{% block content %}
+<section class="registration-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary text-white p-4">
+                        <h2 class="mb-0">Student Registration Form</h2>
+                        <p class="small mb-0 mt-2">Please fill out all fields below</p>
+                    </div>
+
+                    <div class="card-body p-4">
+                        {% if error %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Error!</strong> {{ error }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endif %}
+
+                        <form method="POST" action="{{ url_for('register') }}" novalidate>
+                            <!-- Student Information Section -->
+                            <fieldset class="mb-4">
+                                <legend class="h5 mb-3 text-primary">Student Information</legend>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="first_name" class="form-label">First Name <span class="text-danger">*</span></label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="first_name" 
+                                               name="first_name" 
+                                               value="{{ form_data.get('first_name', '') }}"
+                                               required 
+                                               maxlength="50"
+                                               placeholder="Enter first name">
+                                        <small class="form-text text-muted">2-50 characters, letters only</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="last_name" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="last_name" 
+                                               name="last_name" 
+                                               value="{{ form_data.get('last_name', '') }}"
+                                               required 
+                                               maxlength="50"
+                                               placeholder="Enter last name">
+                                        <small class="form-text text-muted">2-50 characters, letters only</small>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="age" class="form-label">Age <span class="text-danger">*</span></label>
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="age" 
+                                               name="age" 
+                                               value="{{ form_data.get('age', '') }}"
+                                               required 
+                                               min="5" 
+                                               max="25"
+                                               placeholder="Enter age">
+                                        <small class="form-text text-muted">5-25 years</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="school" class="form-label">School <span class="text-danger">*</span></label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="school" 
+                                               name="school" 
+                                               value="{{ form_data.get('school', '') }}"
+                                               required 
+                                               maxlength="100"
+                                               placeholder="Enter school name">
+                                        <small class="form-text text-muted">2-100 characters</small>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <!-- Parent/Guardian Information Section -->
+                            <fieldset class="mb-4">
+                                <legend class="h5 mb-3 text-primary">Parent/Guardian Information</legend>
+                                
+                                <div class="mb-3">
+                                    <label for="guardian_name" class="form-label">Parent/Guardian Name <span class="text-danger">*</span></label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="guardian_name" 
+                                           name="guardian_name" 
+                                           value="{{ form_data.get('guardian_name', '') }}"
+                                           required 
+                                           maxlength="100"
+                                           placeholder="Enter parent/guardian name">
+                                    <small class="form-text text-muted">2-100 characters</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="parent_email" class="form-label">Parent Email <span class="text-danger">*</span></label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="parent_email" 
+                                           name="parent_email" 
+                                           value="{{ form_data.get('parent_email', '') }}"
+                                           required 
+                                           maxlength="120"
+                                           placeholder="Enter email address">
+                                    <small class="form-text text-muted">Valid email address required</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="parent_phone" class="form-label">Parent Phone Number <span class="text-danger">*</span></label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="parent_phone" 
+                                           name="parent_phone" 
+                                           value="{{ form_data.get('parent_phone', '') }}"
+                                           required 
+                                           maxlength="20"
+                                           placeholder="Enter phone number">
+                                    <small class="form-text text-muted">Minimum 10 digits</small>
+                                </div>
+                            </fieldset>
+
+                            <!-- Interest Section -->
+                            <fieldset class="mb-4">
+                                <legend class="h5 mb-3 text-primary">Areas of Interest</legend>
+                                
+                                <div class="mb-3">
+                                    <label for="area_of_interest" class="form-label">Select Area of Interest <span class="text-danger">*</span></label>
+                                    <select class="form-select" 
+                                            id="area_of_interest" 
+                                            name="area_of_interest" 
+                                            required>
+                                        <option value="">-- Please select an option --</option>
+                                        {% for area in areas_of_interest %}
+                                        <option value="{{ area }}" {% if form_data.get('area_of_interest') == area %}selected{% endif %}>
+                                            {{ area }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="comments" class="form-label">Additional Comments (Optional)</label>
+                                    <textarea class="form-control" 
+                                              id="comments" 
+                                              name="comments" 
+                                              rows="4" 
+                                              maxlength="500"
+                                              placeholder="Any additional information or questions?">{{ form_data.get('comments', '') }}</textarea>
+                                    <small class="form-text text-muted">Maximum 500 characters</small>
+                                </div>
+                            </fieldset>
+
+                            <!-- Human Verification Section -->
+                            <fieldset class="mb-4 p-3 bg-light border rounded">
+                                <legend class="h6 mb-3 text-dark">Human Verification <span class="text-danger">*</span></legend>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <strong>{{ question }} = ?</strong>
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="verification_answer" 
+                                           name="verification_answer" 
+                                           required 
+                                           placeholder="Enter the answer"
+                                           autocomplete="off">
+                                    <small class="form-text text-muted">Please answer the math question above</small>
+                                </div>
+                            </fieldset>
+
+                            <!-- Buttons -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('home') }}" class="btn btn-secondary" role="button">Cancel</a>
+                                <button type="submit" class="btn btn-primary btn-lg">Submit Registration</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="alert alert-info mt-4" role="alert">
+                    <strong>Privacy Notice:</strong> Your information will be used only for registration and communication purposes. We will never share your data with third parties.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Registration Successful - C&D Academy{% endblock %}
+
+{% block content %}
+<section class="success-section py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body text-center p-5">
+                        <!-- Success Icon -->
+                        <div class="mb-4">
+                            <div class="success-icon">
+                                <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="40" cy="40" r="38" stroke="#28a745" stroke-width="4" fill="none"/>
+                                    <path d="M25 40L35 50L55 30" stroke="#28a745" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Success Message -->
+                        <h1 class="display-5 fw-bold text-success mb-3">
+                            Registration Submitted Successfully!
+                        </h1>
+
+                        <!-- Thank You Message -->
+                        <p class="lead text-muted mb-4">
+                            Thank you for registering with C&D Academy. We're excited to have you join us!
+                        </p>
+
+                        <!-- Details -->
+                        <div class="alert alert-success" role="alert">
+                            <p class="mb-2">
+                                <strong>What's Next?</strong>
+                            </p>
+                            <ul class="mb-0 text-start" style="display: inline-block;">
+                                <li>A confirmation email has been sent to the administrator</li>
+                                <li>You will receive further instructions via email</li>
+                                <li>If you have any questions, please contact us</li>
+                            </ul>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="row mt-5 mb-4">
+                            <div class="col-md-6 mx-auto">
+                                <h5 class="mb-3">Contact Us</h5>
+                                <p class="mb-2">
+                                    <strong>Email:</strong> info@cdacademy.com
+                                </p>
+                                <p>
+                                    <strong>Phone:</strong> (555) 123-4567
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Return Button -->
+                        <div class="mt-5">
+                            <a href="{{ url_for('home') }}" class="btn btn-primary btn-lg">
+                                Return to Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information -->
+                <div class="mt-4">
+                    <div class="card border-0 bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">About C&D Academy</h5>
+                            <p class="card-text">
+                                C&D Academy is dedicated to providing quality education and training in technology and digital skills. 
+                                Our programs are designed to help students of all ages develop valuable skills for the future.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
