@@ -5,3 +5,4 @@ qrcode==7.4.2
 email-validator==2.1.0
 gunicorn==21.2.0
 Werkzeug==3.0.1
+requests==2.31.0
