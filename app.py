@@ -271,8 +271,29 @@ def register():
         # Send email notification
         email_sent = send_registration_email(form_data)
         
+        if not email_sent:
+            question, answer = generate_verification_question()
+            session['verification_answer'] = answer
+            session['verification_question'] = question
+            return render_template('register.html',
+                                   error="There was an issue sending your registration. Please try again later.",
+                                   form_data=form_data,
+                                   question=question,
+                                   areas_of_interest=[
+                                       'Speed',
+                                       'Agility',
+                                       'Coordination',
+                                       'Strength',
+                                       'Confidence'
+                                   ])
+
         # Redirect to success page
         return redirect(url_for('success'))
+
+@app.route('/success')
+def success():
+    """Successful registration confirmation page."""
+    return render_template('success.html')
 
 @app.errorhandler(404)
 def not_found(error):
