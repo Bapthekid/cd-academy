@@ -84,18 +84,29 @@ python -c "import secrets; print(secrets.token_hex(32))"
 # Example output: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
 ```
 
-### 2.2 Gmail Setup (For Email Notifications)
+### 2.2 SendGrid Setup (Required on Render — SMTP Is Blocked)
+
+Render blocks outbound SMTP (ports 25, 465, 587). Gmail SMTP will **not** work in production. Use SendGrid over HTTPS instead:
+
+1. Create a free account at [sendgrid.com](https://sendgrid.com)
+2. Go to **Settings → API Keys** → Create API Key (Full Access or Restricted with Mail Send)
+3. Go to **Settings → Sender Authentication → Single Sender Verification**
+4. Add and verify the email address you want emails to come from (e.g. `clardo2922@gmail.com`)
+5. Copy the API key — you will set it as `SENDGRID_API_KEY` on Render
+
+**Important:** The verified Single Sender address should match `EMAIL_ADDRESS` in your environment variables.
+
+### 2.3 Gmail App Password (Local Development Only)
+
+For running `python app.py` on your computer:
 
 1. Go to [Google Account Security](https://myaccount.google.com/security)
-2. Enable 2-Factor Authentication
-3. Search for "App passwords"
-4. Select "Mail" and "Windows Computer"
-5. Google will generate a 16-character app password
-6. Copy this password (you'll use it for GMAIL_APP_PASSWORD)
+2. Enable 2-Factor Authentication → App passwords
+3. Use the 16-character password as `GMAIL_APP_PASSWORD`
 
-**Important:** This is NOT your regular Gmail password. Keep it secure.
+This is **not** used on Render when `APP_ENV=production`.
 
-### 2.3 Create Render Service
+### 2.4 Create Render Service
 
 1. Go to [render.com](https://render.com) and sign in
 2. Click "New +" → "Web Service"
@@ -120,9 +131,9 @@ In the Render dashboard, go to your service → Environment:
 
 ```
 SECRET_KEY=<your-generated-secret-key>
-EMAIL_ADDRESS=<your-gmail-address>
-GMAIL_APP_PASSWORD=<your-google-app-password>
 ADMIN_EMAIL=<admin-email-address>
+EMAIL_ADDRESS=<your-verified-sendgrid-sender>
+SENDGRID_API_KEY=<your-sendgrid-api-key>
 APP_ENV=production
 DEBUG=False
 HOST=0.0.0.0
@@ -130,11 +141,13 @@ HOST=0.0.0.0
 
 **Where:**
 - `SECRET_KEY`: Generate using the Python command above
-- `EMAIL_ADDRESS`: Your Gmail address (e.g., yourname@gmail.com)
-- `GMAIL_APP_PASSWORD`: The 16-character app password from Google
-- `ADMIN_EMAIL`: Where registration emails should be sent
-- `APP_ENV`: Should always be `production`
-- `DEBUG`: Should always be `False` in production
+- `ADMIN_EMAIL`: Where registration notifications are delivered (e.g. `clardo2922@gmail.com`)
+- `EMAIL_ADDRESS`: Must match your **verified SendGrid Single Sender** address
+- `SENDGRID_API_KEY`: API key from SendGrid (required on Render)
+- `APP_ENV`: Must be `production` (enables HTTP email, skips blocked SMTP)
+- `DEBUG`: Must be `False` in production
+
+`GMAIL_APP_PASSWORD` is optional on Render and only needed for local SMTP testing.
 
 ## Step 4: Deploy
 
@@ -160,7 +173,7 @@ git push origin main
    Starting C&D Academy application...
    Configuration: DEBUG=False, HOST=0.0.0.0, PORT=10000
    Environment: production
-   Mail configured for: your-email@gmail.com
+   HTTP email provider(s) configured: SendGrid
    ```
 
 3. Check for errors related to:
@@ -190,18 +203,22 @@ Once deployed (status shows "Live"):
 - Look for binding errors in logs
 
 ### Email Not Sending
+
+**Log: `SMTP TCP connect failed ... Network is unreachable`**
+→ Expected on Render. Add `SENDGRID_API_KEY` and redeploy. Gmail SMTP cannot be used on Render.
+
+**Log: `SMTP is blocked on this host`**
+→ Set `SENDGRID_API_KEY` in Render environment variables (see Step 2.2).
+
+**Log: `SendGrid send failed: 403`**
+→ Verify your sender in SendGrid (Single Sender Verification) and ensure `EMAIL_ADDRESS` matches.
+
 ```
-Error: ADMIN_EMAIL not configured in environment variables
+Error: ADMIN_EMAIL not configured
 → Add ADMIN_EMAIL to Render environment variables
 
-Error: EMAIL_ADDRESS environment variable is not set
-→ Add EMAIL_ADDRESS to Render environment variables
-
-Error: GMAIL_APP_PASSWORD environment variable is not set
-→ Add GMAIL_APP_PASSWORD to Render environment variables
-
-Connection refused to smtp.gmail.com:587
-→ Render network may be blocking SMTP; check email configuration
+Error: Email not configured
+→ Add SENDGRID_API_KEY (production) or EMAIL_ADDRESS + GMAIL_APP_PASSWORD (local)
 ```
 
 ### 500 Errors on Form Submission
@@ -218,9 +235,11 @@ Connection refused to smtp.gmail.com:587
 | Variable | Required | Example | Notes |
 |----------|----------|---------|-------|
 | SECRET_KEY | Yes | `a1b2c3...` | Generate with Python secrets module |
-| EMAIL_ADDRESS | Yes | `yourname@gmail.com` | Gmail address for sending emails |
-| GMAIL_APP_PASSWORD | Yes | `abcd efgh ijkl mnop` | 16-char app password from Google |
+| SENDGRID_API_KEY | Yes (Render) | `SG.xxx` | Required on Render; SMTP is blocked |
+| EMAIL_ADDRESS | Yes | `yourname@gmail.com` | Must match SendGrid verified sender |
 | ADMIN_EMAIL | Yes | `admin@example.com` | Where registration emails go |
+| GMAIL_APP_PASSWORD | Local only | `abcd efgh ijkl mnop` | Gmail app password for local dev |
+| RESEND_API_KEY | No | `re_xxx` | Alternative to SendGrid |
 | APP_ENV | Yes | `production` | Always use "production" |
 | DEBUG | Yes | `False` | Always use "False" in production |
 | HOST | No | `0.0.0.0` | Default: 0.0.0.0 |

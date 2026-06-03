@@ -38,32 +38,54 @@ if not app.secret_key:
     logger.error("CRITICAL: SECRET_KEY environment variable is not set")
     raise ValueError("SECRET_KEY must be set in environment variables")
 
-# Configure Flask-Mail
-logger.info("Configuring Flask-Mail with SMTP settings...")
+# Configure Flask-Mail (SMTP is optional when using HTTP email providers on Render)
+logger.info("Configuring email settings...")
 try:
+    has_smtp_creds = bool(os.getenv('EMAIL_ADDRESS') and os.getenv('GMAIL_APP_PASSWORD'))
+    has_http_email = bool(os.getenv('SENDGRID_API_KEY') or os.getenv('RESEND_API_KEY'))
+
+    if not has_smtp_creds and not has_http_email:
+        raise ValueError(
+            "Email not configured. Set Gmail SMTP (EMAIL_ADDRESS + GMAIL_APP_PASSWORD) "
+            "or an HTTP provider (SENDGRID_API_KEY or RESEND_API_KEY). "
+            "Render and most cloud hosts block SMTP; use SendGrid in production."
+        )
+
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
     app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
     app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
     app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
-    app.config['MAIL_USERNAME'] = os.getenv('EMAIL_ADDRESS')
-    app.config['MAIL_PASSWORD'] = os.getenv('GMAIL_APP_PASSWORD')
-    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('EMAIL_ADDRESS')
+    app.config['MAIL_USERNAME'] = os.getenv('EMAIL_ADDRESS') or os.getenv('ADMIN_EMAIL')
+    app.config['MAIL_PASSWORD'] = os.getenv('GMAIL_APP_PASSWORD', '')
+    app.config['MAIL_DEFAULT_SENDER'] = (
+        os.getenv('EMAIL_ADDRESS')
+        or os.getenv('RESEND_FROM_EMAIL')
+        or os.getenv('ADMIN_EMAIL')
+    )
     app.config['MAIL_TIMEOUT'] = int(os.getenv('MAIL_TIMEOUT', 15))
-    
-    # Validate mail configuration
-    if not app.config['MAIL_USERNAME']:
-        logger.error("CRITICAL: EMAIL_ADDRESS environment variable is not set")
-        raise ValueError("EMAIL_ADDRESS must be set in environment variables")
-    if not app.config['MAIL_PASSWORD']:
-        logger.error("CRITICAL: GMAIL_APP_PASSWORD environment variable is not set")
-        raise ValueError("GMAIL_APP_PASSWORD must be set in environment variables")
-    
-    logger.info(f"Mail configured for: {app.config['MAIL_USERNAME']}")
+
+    if has_smtp_creds:
+        logger.info(f"SMTP mail configured for: {app.config['MAIL_USERNAME']}")
+    if has_http_email:
+        providers = []
+        if os.getenv('SENDGRID_API_KEY'):
+            providers.append('SendGrid')
+        if os.getenv('RESEND_API_KEY'):
+            providers.append('Resend')
+        logger.info(f"HTTP email provider(s) configured: {', '.join(providers)}")
 except Exception as e:
-    logger.error(f"CRITICAL: Failed to configure Flask-Mail: {str(e)}")
+    logger.error(f"CRITICAL: Failed to configure email: {str(e)}")
     raise
 
 mail = Mail(app)
+
+if os.getenv('APP_ENV', '').lower() == 'production' and not (
+    os.getenv('SENDGRID_API_KEY') or os.getenv('RESEND_API_KEY')
+):
+    logger.warning(
+        "Production mode without SENDGRID_API_KEY or RESEND_API_KEY. "
+        "SMTP is blocked on Render; registration emails will fail until an HTTP provider is configured."
+    )
 
 # Helper function to generate a simple math question for verification
 def generate_verification_question():
@@ -255,14 +277,60 @@ def build_registration_message(form_data, admin_email):
     )
 
 
+def has_http_email_provider():
+    """True when an HTTPS email API is configured (works on Render; SMTP ports are blocked)."""
+    return bool(os.getenv('SENDGRID_API_KEY') or os.getenv('RESEND_API_KEY'))
+
+
+def smtp_disabled():
+    """
+    Return True when SMTP should not be attempted.
+    Cloud hosts like Render block outbound ports 25/465/587.
+    """
+    if os.getenv('DISABLE_SMTP', '').lower() == 'true':
+        return True
+    if os.getenv('FORCE_SMTP', '').lower() == 'true':
+        return False
+    if os.getenv('APP_ENV', '').lower() == 'production':
+        return True
+    return False
+
+
+def has_smtp_credentials():
+    return bool(os.getenv('EMAIL_ADDRESS') and os.getenv('GMAIL_APP_PASSWORD'))
+
+
 def attempt_send_registration_email(form_data):
     """
-    Try to deliver a registration email via SMTP (with retries) or SendGrid.
+    Try to deliver a registration email via HTTP API (SendGrid/Resend) or SMTP.
     Does not queue on failure. Returns True if delivered, False otherwise.
     """
     admin_email = os.getenv('ADMIN_EMAIL')
     if not admin_email:
         logger.error("Error: ADMIN_EMAIL not configured in environment variables")
+        return False
+
+    # HTTP APIs use port 443 and work on Render; try these first in production.
+    if has_http_email_provider():
+        if send_via_http_email(form_data):
+            return True
+        if smtp_disabled():
+            logger.error(
+                "HTTP email delivery failed and SMTP is disabled in production. "
+                "Verify SENDGRID_API_KEY / RESEND_API_KEY and sender verification."
+            )
+            return False
+
+    if smtp_disabled():
+        logger.error(
+            "SMTP is blocked on this host (typical for Render). "
+            "Add SENDGRID_API_KEY to environment variables. "
+            "See DEPLOYMENT.md for setup steps."
+        )
+        return False
+
+    if not has_smtp_credentials():
+        logger.error("SMTP credentials (EMAIL_ADDRESS + GMAIL_APP_PASSWORD) are not configured.")
         return False
 
     message = build_registration_message(form_data, admin_email)
@@ -278,10 +346,8 @@ def attempt_send_registration_email(form_data):
         smtp_available = False
 
     if not smtp_available:
-        logger.warning(
-            f"SMTP server {host}:{port} unreachable; attempting SendGrid fallback if configured."
-        )
-        return send_via_sendgrid(form_data)
+        logger.warning(f"SMTP server {host}:{port} unreachable; trying HTTP email if configured.")
+        return send_via_http_email(form_data)
 
     retry_count = int(os.getenv('MAIL_RETRY_COUNT', 2))
     retry_interval = int(os.getenv('MAIL_RETRY_INTERVAL', 5))
@@ -301,7 +367,7 @@ def attempt_send_registration_email(form_data):
             if attempt < retry_count:
                 sleep(retry_interval)
 
-    return send_via_sendgrid(form_data)
+    return send_via_http_email(form_data)
 
 
 def process_email_queue():
@@ -372,6 +438,13 @@ def can_connect_smtp(host, port, timeout=5):
         return False
 
 
+def send_via_http_email(data):
+    """Try SendGrid, then Resend. Returns True if any provider succeeds."""
+    if send_via_sendgrid(data):
+        return True
+    return send_via_resend(data)
+
+
 def send_via_sendgrid(data):
     """Attempt to send email via SendGrid API if configured. Returns True on success."""
     api_key = os.getenv('SENDGRID_API_KEY')
@@ -415,6 +488,47 @@ def send_via_sendgrid(data):
         return False
 
 
+def send_via_resend(data):
+    """Attempt to send email via Resend API if configured. Returns True on success."""
+    api_key = os.getenv('RESEND_API_KEY')
+    admin_email = os.getenv('ADMIN_EMAIL')
+    from_email = os.getenv('RESEND_FROM_EMAIL') or app.config.get('MAIL_DEFAULT_SENDER')
+    if not api_key or not admin_email or not from_email:
+        return False
+
+    subject = f"New Registration: {data['first_name']} {data['last_name']}"
+    content_text = format_registration_email_body(
+        data,
+        received_on=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    )
+
+    payload = {
+        'from': from_email,
+        'to': [admin_email],
+        'subject': subject,
+        'text': content_text,
+    }
+
+    try:
+        resp = requests.post(
+            'https://api.resend.com/emails',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json',
+            },
+            json=payload,
+            timeout=10,
+        )
+        if resp.status_code in (200, 201):
+            logger.info(f"Resend email sent for {data['first_name']} {data['last_name']}")
+            return True
+        logger.error(f"Resend send failed: {resp.status_code} {resp.text}")
+        return False
+    except Exception as e:
+        logger.error(f"Resend send exception: {e}", exc_info=True)
+        return False
+
+
 try:
     process_email_queue()
 except Exception as startup_queue_error:
@@ -424,7 +538,7 @@ except Exception as startup_queue_error:
 def send_registration_email(form_data):
     """
     Send registration details to administrator.
-    Returns True only if the email was delivered (SMTP or SendGrid).
+    Returns True only if the email was delivered (SMTP, SendGrid, or Resend).
     Returns False if delivery failed and the registration was queued for retry.
     """
     admin_email = os.getenv('ADMIN_EMAIL')

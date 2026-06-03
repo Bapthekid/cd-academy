@@ -24,3 +24,5 @@ services:
         sync: false
       - key: ADMIN_EMAIL
         sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
