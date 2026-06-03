@@ -189,18 +189,23 @@ main {
 }
 
 .cd-info-card {
-    background-color: var(--cd-black-soft) !important;
+    background-color: var(--cd-white) !important;
     border: 2px solid var(--cd-yellow) !important;
-    color: var(--cd-white);
+    border-left: 6px solid var(--cd-yellow) !important;
+    color: var(--cd-black-soft);
+}
+
+.cd-info-card .card-body {
+    background-color: var(--cd-white) !important;
 }
 
 .cd-info-card .card-title {
-    color: var(--cd-yellow);
+    color: var(--cd-black) !important;
     font-weight: 700;
 }
 
 .cd-info-card .card-text {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--cd-black-soft) !important;
 }
 
 /* Typography accents */
