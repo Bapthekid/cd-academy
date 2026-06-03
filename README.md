@@ -178,7 +178,7 @@ The application will start on `http://localhost:5000`
 ### Student Information
 - **First Name**: 2-50 characters, letters only
 - **Last Name**: 2-50 characters, letters only
-- **Age**: 5-25 years (numeric)
+- **Age**: 5-14 years (numeric)
 - **School**: 2-100 characters
 
 ### Parent/Guardian Information

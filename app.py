@@ -141,8 +141,8 @@ def validate_form_data(data):
     # Age validation
     try:
         age = int(data.get('age', 0))
-        if age < 5 or age > 25:
-            errors.append("Age must be between 5 and 25.")
+        if age < 5 or age > 14:
+            errors.append("Age must be between 5 and 14.")
     except ValueError:
         errors.append("Please enter a valid age as a number.")
     
